@@ -4,6 +4,7 @@
   "package": "com.flo0815.vineclipper.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "VineBlockMixin"
   ],
   "client": [
   ],
