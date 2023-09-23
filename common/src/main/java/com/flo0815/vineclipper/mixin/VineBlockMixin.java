@@ -15,7 +15,6 @@ import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.VineBlock;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
@@ -23,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(VineBlock.class)
@@ -32,9 +32,9 @@ public abstract class VineBlockMixin extends Block {
         super(properties);
     }
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    public void init(BlockBehaviour.Properties properties, CallbackInfo ci) {
-        this.registerDefaultState(this.defaultBlockState().setValue(VineClipper.CLIPPED, false));
+    @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/VineBlock;registerDefaultState(Lnet/minecraft/world/level/block/state/BlockState;)V"))
+    public BlockState initModRegisterDefaultState(BlockState blockState) {
+        return blockState.setValue(VineClipper.CLIPPED, false);
     }
 
     @Inject(method = "createBlockStateDefinition" , at = @At("RETURN"))
