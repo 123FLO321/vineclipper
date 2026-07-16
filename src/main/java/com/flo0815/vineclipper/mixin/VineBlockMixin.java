@@ -11,6 +11,10 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShearsItem;
+//? if >=1.20.5 {
+/*import net.minecraft.world.ItemInteractionResult;
+*/
+//?}
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.VineBlock;
@@ -47,6 +51,7 @@ public abstract class VineBlockMixin extends Block {
         }
     }
 
+    //? if <1.20.5 {
     @Override
     @SuppressWarnings("deprecation")
     public InteractionResult use(BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interactionHand, BlockHitResult blockHitResult) {
@@ -56,6 +61,16 @@ public abstract class VineBlockMixin extends Block {
         }
         return InteractionResult.PASS;
     }
+    //?} else {
+    /*@Override
+    protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interactionHand, BlockHitResult blockHitResult) {
+        if (tryClip(heldItem, blockState, level, blockPos, player, interactionHand)) {
+            return ItemInteractionResult.SUCCESS;
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+    */
+    //?}
 
     private boolean tryClip(ItemStack heldItem, BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interactionHand) {
         if (interactionHand != InteractionHand.MAIN_HAND) return false;

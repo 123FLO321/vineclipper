@@ -8,6 +8,10 @@ import net.fabricmc.api.ModInitializer;
 /*import net.minecraftforge.fml.common.Mod;
 */
 /*?}*/
+/*? if neoforge {*/
+/*import net.neoforged.fml.common.Mod;
+*/
+/*?}*/
 
 /*? if fabric {*/
 public class VineClipper implements ModInitializer {
