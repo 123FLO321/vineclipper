@@ -114,7 +114,13 @@ gradle-app.setting
 # Common working directory
 run/
 
-# Gradle Wrapper
-/gradle/wrapper/gradle-wrapper.jar
-/gradlew
-/gradlew.bat
+# Gradle Wrapper (tracked so ./gradlew works from a fresh clone / CI)
+!/gradle/wrapper/gradle-wrapper.jar
+!/gradlew
+!/gradlew.bat
+
+versions/*/build/
+versions/*/.gradle/
+versions/*/run/
+run/
+runs/

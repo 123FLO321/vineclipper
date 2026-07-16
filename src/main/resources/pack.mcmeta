@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": ${packVersion},
+    "description": "VineClipper resources"
+  }
+}
