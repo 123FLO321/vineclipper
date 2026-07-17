@@ -23,7 +23,7 @@ jobs:
       - name: Surface build failure (diagnostic)
         if: failure()
         run: |
-          MSG=$(tail -n 80 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          MSG=$(tail -n 150 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
           echo "::error::${MSG}"
       - name: Dry-run publish configuration
         run: ./gradlew publishMods --continue
