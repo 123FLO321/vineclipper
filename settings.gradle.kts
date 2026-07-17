@@ -24,6 +24,12 @@ stonecutter {
             for (it in loaders) version("$version-$it", version)
         }
 
+        mc("1.16.5", "fabric", "forge")
+        mc("1.17.1", "fabric", "forge")
+        mc("1.18.2", "fabric", "forge")
+        mc("1.19.1", "fabric", "forge")
+        mc("1.19.2", "fabric", "forge")
+        mc("1.19.3", "fabric", "forge")
         mc("1.19.4", "fabric", "forge")
         mc("1.20.1", "fabric", "forge")
         mc("1.20.2", "fabric", "forge")

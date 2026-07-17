@@ -5,7 +5,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+//? if >=1.19 {
 import net.minecraft.util.RandomSource;
+//?} else {
+/*import java.util.Random;
+*/
+//?}
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -44,12 +49,22 @@ public abstract class VineBlockMixin extends Block {
         builder.add(VineClipper.CLIPPED);
     }
 
+    //? if >=1.19 {
     @Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
     public void randomTick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, RandomSource randomSource, CallbackInfo ci) {
         if (blockState.getValue(VineClipper.CLIPPED)) {
             ci.cancel();
         }
     }
+    //?} else {
+    /*@Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
+    public void randomTick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, Random random, CallbackInfo ci) {
+        if (blockState.getValue(VineClipper.CLIPPED)) {
+            ci.cancel();
+        }
+    }
+    */
+    //?}
 
     //? if <1.20.5 {
     /*@Override
