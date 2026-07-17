@@ -11,6 +11,37 @@ jobs:
       GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v4
+      - name: Preflight - dependency availability
+        id: preflight
+        run: |
+          check_neoforge() {
+            family="$1"
+            version="$2"
+            url="https://maven.neoforged.net/releases/net/neoforged/neoforge/${version}/neoforge-${version}.pom"
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            echo "neoforge ${version} (family ${family}): HTTP ${code}"
+            if [ "$code" != "200" ]; then
+              meta=$(curl -s "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml")
+              candidates=$(echo "$meta" | grep -o "<version>${family}[^<]*</version>" | sed -e 's/<version>//' -e 's#</version>##' | tail -5)
+              report="Pinned neoforge ${version} returned HTTP ${code} from this runner (expected 200).%0ANewest ${family}.x versions and their HTTP status from this runner:%0A"
+              while IFS= read -r v; do
+                [ -z "$v" ] && continue
+                c2=$(curl -s -o /dev/null -w '%{http_code}' "https://maven.neoforged.net/releases/net/neoforged/neoforge/${v}/neoforge-${v}.pom")
+                report="${report}${v}: ${c2}%0A"
+              done <<< "$candidates"
+              echo "::error::NEOFORGE-PREFLIGHT-FAIL: ${report}"
+              return 1
+            fi
+            return 0
+          }
+
+          FAIL=0
+          check_neoforge "26.1.2" "26.1.2.81" || FAIL=1
+          check_neoforge "26.2.0" "26.2.0.23-beta" || FAIL=1
+
+          if [ "$FAIL" -eq 1 ]; then
+            exit 1
+          fi
       - name: Make gradlew executable
         run: chmod +x gradlew
       - name: Free disk space
@@ -25,9 +56,9 @@ jobs:
       - name: Build all versions
         run: |
           set -o pipefail
-          ./gradlew build -Dorg.gradle.workers.max=2 --max-workers=2 --refresh-dependencies 2>&1 | tee build.log
+          ./gradlew build -Dorg.gradle.workers.max=2 --max-workers=2 2>&1 | tee build.log
       - name: Surface build failure (diagnostic)
-        if: failure()
+        if: failure() && steps.preflight.outcome == 'success'
         run: |
           B1=$(grep -n -A 3 -E "FAILURE:|What went wrong|Caused by:|OutOfMemoryError|No space left" build.log | tail -c 3000 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
           echo "::error::GRADLE-FAILURE-BLOCK: ${B1}"
@@ -37,9 +68,6 @@ jobs:
 
           B3=$( { echo "df:"; df -h / | tail -1; echo "free:"; free -m | head -2; echo "dmesg:"; sudo dmesg 2>/dev/null | grep -iE "oom|killed process" | tail -5 || true; } | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
           echo "::error::SYSTEM-STATE: ${B3}"
-
-          B4=$(curl -sI https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.2.82/neoforge-26.1.2.82.pom | head -8 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
-          echo "::error::NEOFORGE-MAVEN-HEAD: ${B4}"
 
           {
             echo "## Build failure diagnostics"
