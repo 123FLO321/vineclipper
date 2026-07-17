@@ -15,8 +15,8 @@ jobs:
         id: preflight
         run: |
           check_neoforge() {
-            family="$1"
-            version="$2"
+            version="$1"
+            family=$(echo "$version" | sed -E 's/\.[^.]+$//')
             url="https://maven.neoforged.net/releases/net/neoforged/neoforge/${version}/neoforge-${version}.pom"
             code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
             echo "neoforge ${version} (family ${family}): HTTP ${code}"
@@ -36,8 +36,13 @@ jobs:
           }
 
           FAIL=0
-          check_neoforge "26.1.2" "26.1.2.81" || FAIL=1
-          check_neoforge "26.2.0" "26.2.0.23-beta" || FAIL=1
+          VERSIONS=$(grep -h "^neoforge_version=" versions/dependencies/*.properties | cut -d'=' -f2 | sort -u)
+          echo "Checking all pinned neoforge versions:"
+          echo "${VERSIONS}"
+          while IFS= read -r v; do
+            [ -z "$v" ] && continue
+            check_neoforge "$v" || FAIL=1
+          done <<< "$VERSIONS"
 
           if [ "$FAIL" -eq 1 ]; then
             exit 1
@@ -56,7 +61,7 @@ jobs:
       - name: Build all versions
         run: |
           set -o pipefail
-          ./gradlew build -Dorg.gradle.workers.max=2 --max-workers=2 2>&1 | tee build.log
+          ./gradlew build --max-workers=2 2>&1 | tee build.log
       - name: Surface build failure (diagnostic)
         if: failure() && steps.preflight.outcome == 'success'
         run: |
