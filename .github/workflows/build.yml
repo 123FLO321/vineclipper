@@ -29,27 +29,32 @@ jobs:
       - name: Surface build failure (diagnostic)
         if: failure()
         run: |
+          B1=$(grep -n -A 3 -E "FAILURE:|What went wrong|Caused by:|OutOfMemoryError|No space left" build.log | tail -c 3000 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::GRADLE-FAILURE-BLOCK: ${B1}"
+
+          B2=$(tail -c 3000 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::LOG-TAIL: ${B2}"
+
+          B3=$( { echo "df:"; df -h / | tail -1; echo "free:"; free -m | head -2; echo "dmesg:"; sudo dmesg 2>/dev/null | grep -iE "oom|killed process" | tail -5 || true; } | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::SYSTEM-STATE: ${B3}"
+
           {
             echo "## Build failure diagnostics"
-            echo '### df -h'
+            echo '### Gradle failure grep (FAILURE:/What went wrong/Caused by/OOM/No space left)'
+            echo '```'
+            grep -n -A 3 -E "FAILURE:|What went wrong|Caused by:|OutOfMemoryError|No space left" build.log || true
+            echo '```'
+            echo '### build.log tail (3000 chars)'
+            echo '```'
+            tail -c 3000 build.log || true
+            echo '```'
+            echo '### system state'
             echo '```'
             df -h || true
-            echo '```'
-            echo '### free -m'
-            echo '```'
             free -m || true
-            echo '```'
-            echo '### dmesg (tail 50)'
-            echo '```'
-            sudo dmesg 2>/dev/null | tail -n 50 || echo "dmesg unavailable"
-            echo '```'
-            echo '### build.log (tail 150)'
-            echo '```'
-            tail -n 150 build.log || true
+            sudo dmesg 2>/dev/null | grep -iE "oom|killed process" | tail -20 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          MSG=$(tail -n 150 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
-          echo "::error::${MSG}"
       - name: Dry-run publish configuration
         run: ./gradlew publishMods --continue
       - uses: actions/upload-artifact@v4
