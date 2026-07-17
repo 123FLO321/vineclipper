@@ -7,10 +7,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v4
       - name: Make gradlew executable
         run: chmod +x gradlew
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -19,10 +25,29 @@ jobs:
       - name: Build all versions
         run: |
           set -o pipefail
-          ./gradlew build 2>&1 | tee build.log
+          ./gradlew build -Dorg.gradle.workers.max=2 --max-workers=2 2>&1 | tee build.log
       - name: Surface build failure (diagnostic)
         if: failure()
         run: |
+          {
+            echo "## Build failure diagnostics"
+            echo '### df -h'
+            echo '```'
+            df -h || true
+            echo '```'
+            echo '### free -m'
+            echo '```'
+            free -m || true
+            echo '```'
+            echo '### dmesg (tail 50)'
+            echo '```'
+            sudo dmesg 2>/dev/null | tail -n 50 || echo "dmesg unavailable"
+            echo '```'
+            echo '### build.log (tail 150)'
+            echo '```'
+            tail -n 150 build.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           MSG=$(tail -n 150 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
           echo "::error::${MSG}"
       - name: Dry-run publish configuration
