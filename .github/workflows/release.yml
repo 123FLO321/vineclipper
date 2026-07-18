@@ -89,6 +89,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build all versions
+        id: build
         run: |
           set -o pipefail
           ./gradlew build --max-workers=2 2>&1 | tee build.log
@@ -135,11 +136,16 @@ jobs:
         run: ./gradlew publishMods --continue
 
       - name: Create GitHub Release
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --notes-file RELEASE_NOTES.md \
-            $(find versions -path '*/build/libs/*.jar' ! -name '*-sources*' ! -name '*-dev*')
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" --clobber \
+              $(find versions -path '*/build/libs/*.jar' ! -name '*-sources*' ! -name '*-dev*')
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file RELEASE_NOTES.md \
+              $(find versions -path '*/build/libs/*.jar' ! -name '*-sources*' ! -name '*-dev*')
+          fi
