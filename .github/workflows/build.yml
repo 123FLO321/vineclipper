@@ -1,0 +1,102 @@
+name: Build
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight - dependency availability
+        id: preflight
+        run: |
+          check_neoforge() {
+            version="$1"
+            family=$(echo "$version" | sed -E 's/\.[^.]+$//')
+            url="https://maven.neoforged.net/releases/net/neoforged/neoforge/${version}/neoforge-${version}.pom"
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            echo "neoforge ${version} (family ${family}): HTTP ${code}"
+            if [ "$code" != "200" ]; then
+              meta=$(curl -s "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml")
+              candidates=$(echo "$meta" | grep -o "<version>${family}[^<]*</version>" | sed -e 's/<version>//' -e 's#</version>##' | tail -5)
+              report="Pinned neoforge ${version} returned HTTP ${code} from this runner (expected 200).%0ANewest ${family}.x versions and their HTTP status from this runner:%0A"
+              while IFS= read -r v; do
+                [ -z "$v" ] && continue
+                c2=$(curl -s -o /dev/null -w '%{http_code}' "https://maven.neoforged.net/releases/net/neoforged/neoforge/${v}/neoforge-${v}.pom")
+                report="${report}${v}: ${c2}%0A"
+              done <<< "$candidates"
+              echo "::error::NEOFORGE-PREFLIGHT-FAIL: ${report}"
+              return 1
+            fi
+            return 0
+          }
+
+          FAIL=0
+          VERSIONS=$(grep -h "^neoforge_version=" versions/dependencies/*.properties | cut -d'=' -f2 | sort -u)
+          echo "Checking all pinned neoforge versions:"
+          echo "${VERSIONS}"
+          while IFS= read -r v; do
+            [ -z "$v" ] && continue
+            check_neoforge "$v" || FAIL=1
+          done <<< "$VERSIONS"
+
+          if [ "$FAIL" -eq 1 ]; then
+            exit 1
+          fi
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build all versions
+        run: |
+          set -o pipefail
+          ./gradlew build --max-workers=2 2>&1 | tee build.log
+      - name: Surface build failure (diagnostic)
+        if: failure() && steps.preflight.outcome == 'success'
+        run: |
+          B1=$(grep -n -A 3 -E "FAILURE:|What went wrong|Caused by:|OutOfMemoryError|No space left" build.log | tail -c 3000 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::GRADLE-FAILURE-BLOCK: ${B1}"
+
+          B2=$(tail -c 3000 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::LOG-TAIL: ${B2}"
+
+          B3=$( { echo "df:"; df -h / | tail -1; echo "free:"; free -m | head -2; echo "dmesg:"; sudo dmesg 2>/dev/null | grep -iE "oom|killed process" | tail -5 || true; } | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::SYSTEM-STATE: ${B3}"
+
+          {
+            echo "## Build failure diagnostics"
+            echo '### Gradle failure grep (FAILURE:/What went wrong/Caused by/OOM/No space left)'
+            echo '```'
+            grep -n -A 3 -E "FAILURE:|What went wrong|Caused by:|OutOfMemoryError|No space left" build.log || true
+            echo '```'
+            echo '### build.log tail (3000 chars)'
+            echo '```'
+            tail -c 3000 build.log || true
+            echo '```'
+            echo '### system state'
+            echo '```'
+            df -h || true
+            free -m || true
+            sudo dmesg 2>/dev/null | grep -iE "oom|killed process" | tail -20 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Dry-run publish configuration
+        run: ./gradlew publishMods --continue
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jars
+          path: |
+            versions/**/build/libs/*.jar
+            !versions/**/build/libs/*-sources*.jar
+            !versions/**/build/libs/*-dev*.jar

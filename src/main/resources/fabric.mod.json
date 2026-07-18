@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "${description}",
+  "authors": ["Flo0815"],
+  "contact": {
+    "issues": "https://github.com/123FLO321/vineclipper/issues",
+    "sources": "https://github.com/123FLO321/vineclipper"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.flo0815.vineclipper.VineClipper"]
+  },
+  "mixins": ["vineclipper.mixins.json"],
+  "depends": {
+    "fabricloader": "*",
+    "minecraft": ">=${minecraftVersion}"
+  }
+}

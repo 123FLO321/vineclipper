@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.flo0815.vineclipper.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "VineBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
