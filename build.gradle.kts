@@ -33,4 +33,18 @@ if (mod.isFabric && stonecutter.current.version == "1.16.5") {
 publishMods {
     changelog = providers.environmentVariable("CHANGELOG")
         .orElse("See https://github.com/123FLO321/vineclipper/blob/main/CHANGELOG.md")
+
+    // Stonecraft 1.10.x sets dryRun equal to DO_PUBLISH, inverting its own documented
+    // contract ("DO_PUBLISH=true publishes"). Restore the documented semantics here;
+    // this block runs after Stonecraft's configuration, so the later set wins.
+    dryRun = providers.environmentVariable("DO_PUBLISH")
+        .getOrElse("false").toBoolean().not()
+
+    // CurseForge rejects uploads without an environment declaration, and Stonecraft
+    // doesn't set one. The mixin adds a blockstate property to VineBlock, so the mod
+    // must be present on both sides.
+    platforms.withType<me.modmuss50.mpp.platforms.curseforge.Curseforge>().configureEach {
+        clientRequired = true
+        serverRequired = true
+    }
 }
