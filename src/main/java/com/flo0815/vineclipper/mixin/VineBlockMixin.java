@@ -41,6 +41,7 @@ public abstract class VineBlockMixin extends Block {
 
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/VineBlock;registerDefaultState(Lnet/minecraft/world/level/block/state/BlockState;)V"))
     public BlockState initModRegisterDefaultState(BlockState blockState) {
+        if (!blockState.hasProperty(VineClipper.CLIPPED)) return blockState;
         return blockState.setValue(VineClipper.CLIPPED, false);
     }
 
@@ -52,14 +53,14 @@ public abstract class VineBlockMixin extends Block {
     //? if >=1.19 {
     @Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
     public void randomTick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, RandomSource randomSource, CallbackInfo ci) {
-        if (blockState.getValue(VineClipper.CLIPPED)) {
+        if (blockState.hasProperty(VineClipper.CLIPPED) && blockState.getValue(VineClipper.CLIPPED)) {
             ci.cancel();
         }
     }
     //?} else {
     /*@Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
     public void randomTick(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, Random random, CallbackInfo ci) {
-        if (blockState.getValue(VineClipper.CLIPPED)) {
+        if (blockState.hasProperty(VineClipper.CLIPPED) && blockState.getValue(VineClipper.CLIPPED)) {
             ci.cancel();
         }
     }
