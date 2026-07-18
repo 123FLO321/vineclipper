@@ -3,7 +3,7 @@
 All notable changes to VineClipper are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/), versions match git tags.
 
-## [1.1.0] - UNRELEASED
+## [1.1.0] - 2026-07-18
 
 ### Added
 - Support for all Architectury-supported Minecraft version groups, 1.16.5 through 26.2, on Fabric, Forge (≤1.20.4), and NeoForge (≥1.20.6).
