@@ -3,9 +3,10 @@
 All notable changes to VineClipper are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/), versions match git tags.
 
-## [Unreleased]
+## [1.2.0] - 2026-07-18
 
 ### Fixed
+- Startup crash when another mod's vines subclass `VineBlock` without the `clipped` blockstate property (e.g. Swampier Swamps) (#3). Such vines now safely opt out of clipping.
 - Clipping an already-clipped vine no longer plays a sound or costs durability, matching vanilla shearing of fully grown kelp and cave vines (#2).
 - Shears no longer lose durability in creative mode (#2).
 - Shears now break properly at zero durability instead of going negative; Unbreaking and Mending now behave as on vanilla tools (#2).
